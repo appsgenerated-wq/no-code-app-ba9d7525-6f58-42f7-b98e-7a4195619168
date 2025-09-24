@@ -1,0 +1,66 @@
+name: VerdePlate
+description: A recipe and meal planning app for healthy, green food.
+
+features:
+  authentication:
+    user_entity: User
+    jwt_secret: env(JWT_SECRET)
+
+entities:
+  User:
+    properties:
+      name: string(required=true)
+      email: string(unique=true, required=true)
+      password: password
+      role:
+        type: enum
+        values: [Admin, User]
+        default: User
+    relationships:
+      - type: hasMany
+        entity: FavoriteRecipe
+        foreignKey: userId
+    access_policies:
+      - role: Admin
+        permissions: [create, read, update, delete]
+      - role: User
+        permissions: [read, update]
+        # Users can only access their own data
+
+  Recipe:
+    properties:
+      title: string(required=true)
+      description: string
+      ingredients: array(string)
+      instructions: string
+      prepTime: number # in minutes
+      imageUrl: file
+    relationships:
+      - type: hasMany
+        entity: FavoriteRecipe
+        foreignKey: recipeId
+    access_policies:
+      - role: Admin
+        permissions: [create, read, update, delete]
+      - role: User
+        permissions: [read]
+      - role: anonymous # Unauthenticated users
+        permissions: [read]
+
+  FavoriteRecipe: # Join entity for User-Recipe many-to-many
+    properties:
+      userId: string(required=true)
+      recipeId: string(required=true)
+    relationships:
+      - type: belongsTo
+        entity: User
+        foreignKey: userId
+      - type: belongsTo
+        entity: Recipe
+        foreignKey: recipeId
+    access_policies:
+      - role: Admin
+        permissions: [create, read, update, delete]
+      - role: User
+        permissions: [create, read, delete]
+        # Users can only manage their own favorites
